@@ -391,3 +391,4 @@ FodyWeavers.xsd
 
 # Do not include files in workloads folder
 /workloads
+WebPage/index.html
