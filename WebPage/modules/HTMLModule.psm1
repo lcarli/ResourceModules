@@ -1,62 +1,4 @@
-﻿# VARIABLES
-$scriptDirectory = Split-Path -Parent $MyInvocation.MyCommand.Definition
-$modulesPath = Resolve-Path (Join-Path $scriptDirectory '..\modules')
-$htmlFilePath = Join-Path $scriptDirectory 'index.html'
-
-# IMPORTANT
-$ModulesList = @()
-
-# FUNCTIONS
-function Get-ModuleDirectories {
-    param (
-        [Parameter(Mandatory = $true)]
-        [string]$path
-    )
-
-    $moduleDirs = @()
-    $childDirs = Get-ChildItem -Path $path -Directory
-
-    foreach ($dir in $childDirs) {
-        # Se o diretório contém um arquivo main.bicep, adicione-o à lista
-        if (Test-Path -Path "$dir\main.bicep") {
-            $moduleDirs += $dir.FullName
-        } else {
-            # Se não, navegue mais fundo nos subdiretórios
-            $moduleDirs += Get-ModuleDirectories -path $dir.FullName
-        }
-    }
-
-    return $moduleDirs
-}
-
-
-function Get-ModuleData {
-    param (
-        [string]$modulePath
-    )
-
-    # Procurar pelo arquivo main.bicep dentro do diretório fornecido
-    $mainBicepPath = Join-Path -Path $modulePath -ChildPath 'main.bicep'
-    if (-not (Test-Path $mainBicepPath -PathType Leaf)) {
-        Write-Error "Arquivo main.bicep não encontrado no diretório $modulePath"
-        return $null
-    }
-
-    # Ler o arquivo main.bicep
-    $bicepContent = Get-Content -Path $mainBicepPath -Raw
-
-    # Extrair o nome do módulo usando regex focando em "metadata name"
-    if ($bicepContent -match 'metadata\s+name\s*=\s*''(.*?)''') {
-        $moduleName = $matches[1]
-    } else {
-        Write-Error "Nome do módulo não encontrado no arquivo main.bicep de $modulePath"
-        return $null
-    }
-
-    return $moduleName
-}
-
-function Create-HTML {
+﻿function Export-HTML {
     param (
         [array]$modulesList
     )
@@ -78,6 +20,7 @@ function Create-HTML {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CARML Bicep</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css">
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -161,6 +104,20 @@ function Create-HTML {
         #generateOutput:hover {
             background-color: #005a9e;
         }
+
+        #output {
+            position: relative;
+        }
+
+        .button-row {
+            display: flex;
+            justify-content: flex-end; /* alinha os botões à direita */
+            gap: 10px; /* adiciona um espaço entre os botões */
+        }
+
+        .button-row button:not(:last-child) {
+            margin-right: 10px; /* adiciona uma margem à direita de todos os botões, exceto o último */
+        }
     </style>
 </head>
 <body>
@@ -181,7 +138,12 @@ function Create-HTML {
             <h2>Optional Fields</h2>
         </div>
         <button id="generateOutput">Generate Output</button>
+        <br>
         <div class="box" id="output">
+            <div class="button-row">
+                <button id="copy-output" title="Copy to Clipboard"><i class="fas fa-copy"></i></button>
+                <button id="save-output" title="Save File"><i class="fas fa-download"></i></button>
+            </div>
             <h2>Output</h2>
             <textarea readonly></textarea>
         </div>
@@ -295,6 +257,23 @@ function Create-HTML {
                 }
                 outputTextarea.textContent = JSON.stringify(parsedModule, null, 2);
             });
+
+            const copyBtn = document.getElementById('copy-output');
+            const saveBtn = document.getElementById('save-output');
+
+            copyBtn.addEventListener('click', function() {
+                outputTextarea.select();
+                document.execCommand('copy');
+                alert('Content copied to clipboard!');
+            });
+
+            saveBtn.addEventListener('click', function() {
+                const blob = new Blob([outputTextarea.value], { type: 'text/plain' });
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = 'parameters.json';
+                a.click();
+            });
         });
     </script>
 </body>
@@ -303,22 +282,4 @@ function Create-HTML {
     return $htmlContent
 }
 
-# MAIN
-$moduleDirectories = Get-ModuleDirectories -path $modulesPath
-
-foreach ($dir in $moduleDirectories) {
-    $moduleName = Get-ModuleData -modulePath $dir
-
-    if ($moduleName) {
-        $moduleData = @{
-            Name    = $moduleName
-            Path    = $dir
-            RawJSON = (Get-Content -Path (Join-Path -Path $dir -ChildPath 'main.json') -Raw)
-        }
-
-        $ModulesList += $moduleData
-    }
-}
-
-$htmlContent = Create-HTML -modulesList $ModulesList
-$htmlContent | Set-Content -Path $htmlFilePath
+Export-ModuleMember -Function Export-HTML
