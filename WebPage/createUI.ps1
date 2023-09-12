@@ -216,7 +216,7 @@ function Create-HTML {
                         let isRequired = false;
                         if (param.metadata && param.metadata.description) {
                             const description = param.metadata.description.toLowerCase();
-                            isRequired = description.includes("required");
+                            isRequired = description.startsWith("required");
                         }
 
                         let inputElement;
