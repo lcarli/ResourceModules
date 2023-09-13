@@ -35,22 +35,19 @@ function Create-HTMLJS {
             const generateBtn = document.getElementById('generateOutput');
 
             `$('#module').on('select2:select', function (e) {
+                outputTextarea.textContent = '';
                 const selectedModule = modulesData.find(module => module.Name === this.value);
                 if (selectedModule) {
 
-                    // Interpretar o JSON do módulo
                     let parsedModule = JSON.parse(selectedModule.RawJSON);
                     let parameters = parsedModule.parameters;
 
-                    // Limpar campos de input antigos
                     requiredFieldsDiv.innerHTML = "<h2>Required Fields</h2>";
                     optionalFieldsDiv.innerHTML = "<h2>Optional Fields</h2>";
 
-                    // Criar campos de input/select para cada parâmetro
                     for (let paramName in parameters) {
                         let param = parameters[paramName];
 
-                        // Determinar se é um campo obrigatório ou opcional
                         let isRequired = false;
                         if (param.metadata && param.metadata.description) {
                             const description = param.metadata.description.toLowerCase();
@@ -59,7 +56,6 @@ function Create-HTMLJS {
 
                         let inputElement;
                         if (param.allowedValues) {
-                            // Se AllowedValues está definido, criamos um dropdown
                             inputElement = document.createElement("select");
                             param.allowedValues.forEach(value => {
                                 let optionElement = document.createElement("option");
@@ -89,7 +85,6 @@ function Create-HTMLJS {
                         divElement.appendChild(labelElement);
                         divElement.appendChild(inputElement);
 
-                        // Adicionar tooltip (hover) com a descrição
                         if (param.metadata && param.metadata.description) {
                             divElement.setAttribute("title", param.metadata.description);
                         }
@@ -104,11 +99,15 @@ function Create-HTMLJS {
             });
 
             generateBtn.addEventListener('click', function() {
+                outputTextarea.textContent = '';
                 const selectedModule = modulesData.find(module => module.Name === moduleSelect.value);
-                let parsedModule = JSON.parse(selectedModule.RawJSON);
-                let parameters = parsedModule.parameters;
 
-                // Verificar campos obrigatórios preenchidos
+                let outputJSON = {
+                    "`$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+                    "contentVersion": "1.0.0.0",
+                    "parameters": {}
+                };
+
                 let allRequiredFilled = true;
                 const requiredInputs = requiredFieldsDiv.querySelectorAll('input, select');
                 for (let input of requiredInputs) {
@@ -116,6 +115,7 @@ function Create-HTMLJS {
                         allRequiredFilled = false;
                         break;
                     }
+                    outputJSON.parameters[input.id] = { "value": input.value };
                 }
 
                 if (!allRequiredFilled) {
@@ -123,15 +123,28 @@ function Create-HTMLJS {
                     return;
                 }
 
-                for (let paramName in parameters) {
-                    let paramValue = document.getElementById(paramName).value;
-                    if (paramValue) {
-                        parameters[paramName].value = paramValue;
-                    } else if (parameters[paramName].defaultValue) {
-                        parameters[paramName].value = parameters[paramName].defaultValue;
+                const optionalInputs = optionalFieldsDiv.querySelectorAll('input, select');
+                for (let input of optionalInputs) {
+                    let parsedModule = JSON.parse(selectedModule.RawJSON);
+                    let parameters = parsedModule.parameters;
+                    if (selectedModule && parameters && parameters[input.id]) {
+                        let paramDetails = parameters[input.id];
+                        let defaultValue = paramDetails.defaultValue;
+                        let actualValue;
+                        if (input.type === "checkbox") {
+                            actualValue = input.checked;
+                        } else if (input.tagName.toLowerCase() === "select") {  // Para campos select
+                            actualValue = input.options[input.selectedIndex].value;
+                        } else {
+                            actualValue = input.value;
+                        }
+                        if (actualValue && actualValue !== defaultValue) {
+                            outputJSON.parameters[input.id] = { "value": actualValue };
+                        }
                     }
                 }
-                outputTextarea.textContent = JSON.stringify(parsedModule, null, 2);
+
+                outputTextarea.textContent = JSON.stringify(outputJSON, null, 2);
             });
 
             const copyBtn = document.getElementById('copy-output');
