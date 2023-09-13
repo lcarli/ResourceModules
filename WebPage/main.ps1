@@ -17,6 +17,10 @@ foreach ($dir in $moduleDirectories) {
     $moduleName = Get-ModuleData -modulePath $dir
 
     if ($moduleName) {
+
+        $bicepFilePath = Join-Path -Path $dir -ChildPath 'main.bicep'
+        az bicep build --file $bicepFilePath --outdir $dir
+
         $moduleData = @{
             Name    = $moduleName
             Path    = $dir

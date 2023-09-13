@@ -68,9 +68,32 @@ function Create-HTMLJS {
                             });
                         } else {
                             inputElement = document.createElement("input");
-                            inputElement.setAttribute("type", param.type === "bool" ? "checkbox" : "text");
-                            if (param.defaultValue) {
-                                inputElement.setAttribute("placeholder", JSON.stringify(param.defaultValue));
+                            if (param.type === "bool") {
+                                inputElement.setAttribute("type", "checkbox");
+                            } else if (param.type === "array") {
+                                inputElement.setAttribute("type", "text");
+                                inputElement.setAttribute("placeholder", "Enter values separated by comma");
+                            } else if (param.type === "int") {
+                                inputElement.setAttribute("type", "number");
+                                if (param.minValue !== undefined) {
+                                    inputElement.setAttribute("min", param.minValue);
+                                }
+                                if (param.maxValue !== undefined) {
+                                    inputElement.setAttribute("max", param.maxValue);
+                                }
+                            } else {
+                                inputElement.setAttribute("type", "text");
+                                if (param.defaultValue) {
+                                    inputElement.setAttribute("placeholder", JSON.stringify(param.defaultValue));
+                                }
+                            }
+
+                            if (param.minLength) {
+                                inputElement.setAttribute("minLength", param.minLength);
+                            }
+
+                            if (param.maxLength) {
+                                inputElement.setAttribute("maxLength", param.maxLength);
                             }
                         }
 
