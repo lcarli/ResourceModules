@@ -1,5 +1,5 @@
 ﻿# Import modules
-Import-Module .\modules\HTMLModule.psm1
+Import-Module .\modules\HTMLModule\HTMLModule.psm1
 Import-Module .\modules\DirectoryModule.psm1
 Import-Module .\modules\DataModule.psm1
 

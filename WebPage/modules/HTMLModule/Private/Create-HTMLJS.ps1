@@ -1,153 +1,29 @@
-﻿function Export-HTML {
+﻿<#
+.SYNOPSIS
+Creates the JavaScript section of the HTML content.
+
+.DESCRIPTION
+Generates the JavaScript used in our HTML exports.
+
+.EXAMPLE
+Create-HTMLJS
+#>
+function Create-HTMLJS {
     param (
-        [array]$modulesList
+        [string]$jsonString
     )
 
-    $options = ''
-    $sortedModulesList = $modulesList | Sort-Object Name
-
-    foreach ($module in $sortedModulesList) {
-        $moduleName = $module.Name
-        $options += "`n<option value='$moduleName'>$moduleName</option>"
-    }
-
-    $jsonString = $modulesList | ConvertTo-Json
-
-    $htmlContent = @"
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CARML Bicep</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css">
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: #f4f4f4;
-        }
-        header {
-            background-color: #4CAF50;
-            color: white;
-            text-align: center;
-            padding: 1em 0;
-        }
-        main {
-            padding: 2em;
-            background-color: white;
-            border-radius: 5px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-            margin: 2em auto;
-            max-width: 800px;
-        }
-        .dropdown-container {
-            margin-bottom: 2em;
-        }
-        .box {
-            border: 1px solid #ccc;
-            padding: 1em;
-            margin-bottom: 2em;
-            border-radius: 5px;
-        }
-        .box h2 {
-            border-bottom: 1px solid #ccc;
-            padding-bottom: 0.5em;
-            margin-bottom: 1em;
-        }
-        textarea {
-            width: 100%;
-            height: 5em;
-            padding: 0.5em;
-            border-radius: 5px;
-            border: 1px solid #ccc;
-            resize: vertical;
-            font-family: Arial, sans-serif;
-            font-size: 0.9em;
-        }
-        label {
-            display: block;
-            margin-bottom: 0.3em;
-            font-weight: bold;
-        }
-        input {
-            width: 100%;
-            padding: 0.5em;
-            border-radius: 5px;
-            border: 1px solid #ccc;
-            font-family: Arial, sans-serif;
-            font-size: 0.9em;
-        }
-        div > div {
-            margin-bottom: 1.5em;
-        }
-        select {
-            padding: 0.5em;
-            border-radius: 5px;
-            border: 1px solid #ccc;
-            font-family: Arial, sans-serif;
-            font-size: 0.9em;
-        }
-        #generateOutput {
-            display: inline-block;
-            padding: 10px 20px;
-            margin-bottom: 10px;
-            border: none;
-            background-color: #0078d4;
-            color: white;
-            cursor: pointer;
-            font-size: 1em;
-            transition: background-color 0.2s;
-        }
-
-        #generateOutput:hover {
-            background-color: #005a9e;
-        }
-
-        #output {
-            position: relative;
-        }
-
-        .button-row {
-            display: flex;
-            justify-content: flex-end; /* alinha os botões à direita */
-            gap: 10px; /* adiciona um espaço entre os botões */
-        }
-
-        .button-row button:not(:last-child) {
-            margin-right: 10px; /* adiciona uma margem à direita de todos os botões, exceto o último */
-        }
-    </style>
-</head>
-<body>
-    <header>
-        <h1>CARML Bicep UI</h1>
-    </header>
-    <main>
-        <div class="dropdown-container">
-            <label for="module">Choose a module:</label>
-            <select id="module">
-                $options
-            </select>
-        </div>
-        <div class="box" id="required-fields">
-            <h2>Required Fields</h2>
-        </div>
-        <div class="box" id="optional-fields">
-            <h2>Optional Fields</h2>
-        </div>
-        <button id="generateOutput">Generate Output</button>
-        <br>
-        <div class="box" id="output">
-            <div class="button-row">
-                <button id="copy-output" title="Copy to Clipboard"><i class="fas fa-copy"></i></button>
-                <button id="save-output" title="Save File"><i class="fas fa-download"></i></button>
-            </div>
-            <h2>Output</h2>
-            <textarea readonly></textarea>
-        </div>
-    </main>
+    return @"
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.0.13/dist/js/select2.min.js"></script>
+    <script>
+        `$(document).ready(function() {
+            `$('#module').select2({
+                placeholder: "Selecione um módulo...",
+                allowClear: true
+            });
+        });
+    </script>
     <script>
         const modulesData = $jsonString;
 
@@ -158,7 +34,7 @@
             const optionalFieldsDiv = document.getElementById('optional-fields');
             const generateBtn = document.getElementById('generateOutput');
 
-            moduleSelect.addEventListener('change', function() {
+            `$('#module').on('select2:select', function (e) {
                 const selectedModule = modulesData.find(module => module.Name === this.value);
                 if (selectedModule) {
 
@@ -276,10 +152,5 @@
             });
         });
     </script>
-</body>
-</html>
 "@
-    return $htmlContent
 }
-
-Export-ModuleMember -Function Export-HTML
